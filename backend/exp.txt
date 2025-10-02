@@ -1,0 +1,7 @@
+Your current account balance stands at ₹0. This means you don't have any deposits or withdrawals yet.
+
+Here's a simple bar chart showing your current balance using matplotlib:
+
+This chart reflects your current balance of ₹0. As you start making transactions or deposits, we can analyze and discuss the impact on your portfolio.
+
+Please let me know how I can assist you further! Do you want to make a deposit, withdraw funds, or explore investment options?
