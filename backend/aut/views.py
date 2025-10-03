@@ -19,6 +19,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .serializers import WatchlistSerializer, PortfolioSerializer, UserProfileSerializer
 from .models import UserProfile, Portfolio, Watchlist
+from .mongodb_client import get_mongo_client
 
 
 
@@ -70,6 +71,7 @@ class LoginView(APIView):
 
 
 from rest_framework_simplejwt.tokens import AccessToken
+from django.core.management import call_command
 
 class UserFromTokenView(APIView):
     permission_classes = [AllowAny]  # you can change this if needed
@@ -108,11 +110,28 @@ class ModelView(APIView):
             print("User:", user)
             print("Prompt:", prompt[:200] + "..." if len(prompt) > 200 else prompt)
             print("---------------------------------------------")
+
+            # Fetch recent news and forecasts
+            news_text = ""
+            forecast_text = ""
+            try:
+                client = get_mongo_client()
+                db = client['stock_db']
+                news_collection = db['news']
+                forecast_collection = db['forecasts']
+                recent_news = list(news_collection.find().sort('scraped_at', -1).limit(5))
+                news_text = "\n".join([f"- {n['title']}" for n in recent_news])
+                recent_forecast = forecast_collection.find_one(sort=[('date', -1)])
+                if recent_forecast:
+                    forecast_text = f"NIFTY Forecast - ARIMA: {recent_forecast.get('arima', 'N/A')}, EMA: {recent_forecast.get('ema', 'N/A')}, XGBoost: {recent_forecast.get('xgboost', 'N/A')}"
+            except Exception as mongo_error:
+                print(f"MongoDB error: {mongo_error}. Proceeding without news and forecasts.")
+            enhanced_prompt = f"Recent stock news:\n{news_text}\n\nStock forecasts:\n{forecast_text}\n\nUser query: {prompt}"
+
             payload = {
                 "model": "deepseek-r1:1.5b",
                 "messages": [
-                    {"role": "system", "content": ""},
-                    {"role": "user", "content": prompt}
+                    {"role": "user", "content": enhanced_prompt}
                 ],
                 "stream": False
             }
@@ -120,12 +139,19 @@ class ModelView(APIView):
             print("Sending payload to Ollama:", payload)
 
             # Send request to Ollama
-            ollama_response = requests.post("http://localhost:11434/api/chat", json=payload)
-            print("Ollama response status:", ollama_response.status_code)
-            if ollama_response.status_code != 200:
-                print("Ollama error text:", ollama_response.text)
-                return JsonResponse({"error": f"Ollama API error: {ollama_response.status_code} - {ollama_response.text}"}, status=500)
-            output = ollama_response.json()
+            try:
+                ollama_response = requests.post("http://localhost:11434/api/chat", json=payload, timeout=30)
+                print("Ollama response status:", ollama_response.status_code)
+                if ollama_response.status_code != 200:
+                    print("Ollama error text:", ollama_response.text)
+                    raise Exception(f"Ollama API error: {ollama_response.status_code} - {ollama_response.text}")
+                output = ollama_response.json()
+            except requests.exceptions.RequestException as req_error:
+                print(f"Ollama request failed: {req_error}")
+                return JsonResponse({"error": "AI service is currently unavailable. Please try again later."}, status=503)
+            except Exception as ollama_error:
+                print(f"Ollama error: {ollama_error}")
+                return JsonResponse({"error": "AI service is currently unavailable. Please try again later."}, status=503)
             print("Ollama output keys:", list(output.keys()))
             response = output['message']['content']
             print("Raw AI response:", response)
@@ -293,4 +319,24 @@ class BalanceView(APIView):
             return Response({"success": True, "balance": balance})
         except Exception as e:
             print("Error updating balance:", str(e))
+            return Response({"success": False, "error": str(e)}, status=500)
+
+class NewsView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            call_command('scrape_news')
+            return Response({"success": True, "message": "News scraped successfully"})
+        except Exception as e:
+            return Response({"success": False, "error": str(e)}, status=500)
+
+class ForecastView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        try:
+            call_command('forecast_stocks')
+            return Response({"success": True, "message": "Forecasts generated successfully"})
+        except Exception as e:
             return Response({"success": False, "error": str(e)}, status=500)

@@ -1,11 +1,7 @@
 from pymongo import MongoClient
 import os
 
-# MongoDB connection URI - replace with your actual connection string or environment variable
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-
-client = MongoClient(MONGODB_URI)
-db = client["trada_db"]  # Use the same database name as frontend
-
-def get_db():
-    return db
+def get_mongo_client():
+    mongo_uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017/')
+    client = MongoClient(mongo_uri)
+    return client
