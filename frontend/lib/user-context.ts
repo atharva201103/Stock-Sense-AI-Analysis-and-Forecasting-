@@ -31,6 +31,11 @@ export async function getUserContext(userId: string, db: any) {
       }
     }
 
+    // Use balance from user document if available (MongoDB users collection)
+    if (user.balance !== undefined) {
+      balance = user.balance
+    }
+
     // Format balance as currency string
     const formattedBalance = `₹${balance.toLocaleString("en-IN")}`
 

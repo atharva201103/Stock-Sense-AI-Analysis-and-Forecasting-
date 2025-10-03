@@ -53,6 +53,7 @@ export function DepositForm() {
 
       // Update balance
       const newBalance = balance + depositAmount
+      console.log("Deposit: current balance =", balance, "deposit amount =", depositAmount, "new balance =", newBalance)
       await updateBalance(newBalance)
 
       toast({

@@ -1,6 +1,6 @@
 // User service for handling user-specific API calls
 
-const API_URL = "/api" // Use relative URL for API routes
+const API_URL = "http://127.0.0.1:8000/api" // Use Django backend API URL
 
 async function getErrorMessage(response: Response, fallback: string) {
   try {
@@ -19,7 +19,7 @@ async function getErrorMessage(response: Response, fallback: string) {
 export const UserService = {
   // Get user portfolio
   getUserPortfolio: async (token: string): Promise<any> => {
-    const response = await fetch(`${API_URL}/user/portfolio`, {
+    const response = await fetch(`${API_URL}/user/portfolio/`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -36,7 +36,7 @@ export const UserService = {
   // Get user watchlist
   getUserWatchlist: async (token: string): Promise<any> => {
     try {
-      const response = await fetch(`${API_URL}/user/watchlist`, {
+      const response = await fetch(`${API_URL}/user/watchlist/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -54,23 +54,47 @@ export const UserService = {
     }
   },
 
-  // Get user transactions
-  getUserTransactions: async (token: string): Promise<any> => {
+  // Get user balance
+  getUserBalance: async (token: string): Promise<any> => {
     try {
-      const response = await fetch(`${API_URL}/user/transactions`, {
+      const response = await fetch(`${API_URL}/user/balance/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
 
       if (!response.ok) {
-        const errorMessage = await getErrorMessage(response, "Failed to fetch transaction data")
+        const errorMessage = await getErrorMessage(response, "Failed to fetch balance data")
         throw new Error(errorMessage)
       }
 
       return response.json()
     } catch (error) {
-      console.error("Transactions fetch error:", error)
+      console.error("Balance fetch error:", error)
+      throw error
+    }
+  },
+
+  // Update user balance
+  updateUserBalance: async (token: string, balance: number): Promise<any> => {
+    try {
+      const response = await fetch(`${API_URL}/user/balance/`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ balance }),
+      })
+
+      if (!response.ok) {
+        const errorMessage = await getErrorMessage(response, "Failed to update balance")
+        throw new Error(errorMessage)
+      }
+
+      return response.json()
+    } catch (error) {
+      console.error("Balance update error:", error)
       throw error
     }
   },
@@ -78,13 +102,13 @@ export const UserService = {
   // Add stock to watchlist
   addToWatchlist: async (token: string, symbol: string, name: string): Promise<any> => {
     try {
-      const response = await fetch(`${API_URL}/user/watchlist/add`, {
+      const response = await fetch(`${API_URL}/user/watchlist/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ symbol, name }),
+        body: JSON.stringify({ stock_symbol: symbol, stock_name: name }),
       })
 
       if (!response.ok) {
@@ -100,31 +124,13 @@ export const UserService = {
     }
   },
 
-  // Remove stock from watchlist
+  // Remove stock from watchlist - This endpoint needs to be implemented in backend if required
   removeFromWatchlist: async (token: string, symbol: string): Promise<any> => {
-    try {
-      const response = await fetch(`${API_URL}/user/watchlist/remove`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ symbol }),
-      })
-
-      if (!response.ok) {
-        const errorMessage = await getErrorMessage(response, "Failed to remove stock from watchlist")
-        throw new Error(errorMessage)
-      }
-
-      return response.json()
-    } catch (error) {
-      console.error("Remove from watchlist error:", error)
-      throw error
-    }
+    // Placeholder: Backend endpoint for removing stock from watchlist not implemented yet
+    throw new Error("Remove from watchlist not implemented in backend")
   },
 
-  // Execute trade
+  // Execute trade - This endpoint needs to be implemented in backend if required
   executeTrade: async (
     token: string,
     symbol: string,
@@ -132,25 +138,7 @@ export const UserService = {
     shares: number,
     price: number,
   ): Promise<any> => {
-    try {
-      const response = await fetch(`${API_URL}/user/trade`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ symbol, action, shares, price }),
-      })
-
-      if (!response.ok) {
-        const errorMessage = await getErrorMessage(response, "Failed to execute trade")
-        throw new Error(errorMessage)
-      }
-
-      return response.json()
-    } catch (error) {
-      console.error("Execute trade error:", error)
-      throw error
-    }
+    // Placeholder: Backend endpoint for executing trade not implemented yet
+    throw new Error("Execute trade not implemented in backend")
   },
 }

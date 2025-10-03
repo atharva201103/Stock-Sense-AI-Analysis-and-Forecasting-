@@ -8,7 +8,7 @@ class SignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ["username", "email", "password"]
-        
+
 
     def create(self, validated_data):
         user = User.objects.create_user(
@@ -17,8 +17,19 @@ class SignupSerializer(serializers.ModelSerializer):
             password=validated_data["password"]
         )
         return user
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['balance']
+
+class PortfolioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Portfolio
+        fields = ['id', 'asset_name', 'quantity', 'value']
+
 class WatchlistSerializer(serializers.ModelSerializer):
-      class Meta:
+    class Meta:
         model = Watchlist
         fields = ['id', 'stock_symbol', 'added_on']
 

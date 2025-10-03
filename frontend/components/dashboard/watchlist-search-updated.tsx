@@ -103,7 +103,7 @@ export function WatchlistSearch({ onStockAdded }: { onStockAdded?: () => void })
         if (!accessToken) return
 
         const data = await UserService.getUserWatchlist(accessToken)
-        const symbols = data.watchlist.stocks.map((stock: any) => stock.symbol)
+        const symbols = data.watchlist.map((stock: any) => stock.symbol)
         setCurrentWatchlist(symbols)
       } catch (error) {
         console.error("Error fetching current watchlist:", error)

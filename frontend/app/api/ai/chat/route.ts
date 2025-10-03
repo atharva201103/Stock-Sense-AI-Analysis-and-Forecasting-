@@ -16,6 +16,7 @@ export async function POST(request: Request) {
     if (!userData) {
       return NextResponse.json({ success: false, error: "Invalid token" }, { status: 401 })
     }
+    console.log("AI chat: userData.id =", userData.id)
 
     const body = await request.json()
     const { message } = body
@@ -80,6 +81,7 @@ If a chart is appropriate, generate matplotlib code to visualize the data.
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
       },
       body: JSON.stringify({
         prompt: prompt,
@@ -153,7 +155,9 @@ If a chart is appropriate, generate matplotlib code to visualize the data.
     // Return the Django response directly
     return NextResponse.json({
       success: true,
-      ...djangoData,
+      type: djangoData.type,
+      content: djangoData.message,
+      image_url: djangoData.image_url,
     })
   } catch (error) {
     console.error("Error generating AI response:", error)

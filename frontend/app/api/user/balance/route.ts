@@ -17,16 +17,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: "Invalid token" }, { status: 401 })
     }
 
+    console.log("Balance GET: userData.id =", userData.id)
+
     const { db } = await connectToDatabase()
     const usersCollection = db.collection(COLLECTIONS.USERS)
 
     // Find user
-    const user = await usersCollection.findOne({ id: userData.id })
+    const userId = String(userData.id)
+    const user = await usersCollection.findOne({ id: userId })
+    console.log("Balance GET: found user =", user)
 
     if (!user) {
       // Create new user with 0 balance if not found
       const newUser = {
-        id: userData.id,
+        id: userId,
         username: userData.username,
         email: userData.email,
         balance: 0,
@@ -61,8 +65,13 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: false, error: "Invalid token" }, { status: 401 })
     }
 
+    const userId = String(userData.id)
+    console.log("Balance PUT: userId =", userId)
+
     const body = await request.json()
     const { balance } = body
+
+    console.log("Balance PUT: new balance =", balance)
 
     if (typeof balance !== "number") {
       return NextResponse.json({ success: false, error: "Invalid balance" }, { status: 400 })
@@ -73,7 +82,7 @@ export async function PUT(request: Request) {
 
     // Find and update user
     const result = await usersCollection.updateOne(
-      { id: userData.id },
+      { id: userId },
       {
         $set: {
           balance,
@@ -87,6 +96,8 @@ export async function PUT(request: Request) {
       },
       { upsert: true },
     )
+
+    console.log("Balance PUT: update result =", result)
 
     if (result.matchedCount === 0 && result.upsertedCount === 0) {
       return NextResponse.json({ success: false, error: "Failed to update balance" }, { status: 500 })
