@@ -85,8 +85,8 @@ export const AIService = {
       // Return the response data in the format expected by the chat component
       return {
         type: data.type || "text",
-        content: data.response || "",
-        message: data.message || data.response || "",
+        content: data.content || data.response || "",
+        message: data.message || data.content || data.response || "",
         image_url: data.image_url || "",
       }
     } catch (error) {
