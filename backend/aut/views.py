@@ -138,9 +138,9 @@ class ModelView(APIView):
             divided_text = response.split('```')
             explanation = ""
             code = ""
-            if len(divided_text) >=1 :
+            if len(divided_text) > 1 :
                 for i in range(0,len(divided_text)):
-                    if i == 1 :
+                    if i % 2 == 1 :
                         image_name = f"{uuid.uuid4().hex}.png"
                         image_path = os.path.join("media", image_name)
                         code = divided_text[i]
