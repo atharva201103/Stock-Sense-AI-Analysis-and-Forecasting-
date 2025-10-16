@@ -77,12 +77,35 @@ export interface NewsItem {
   tags?: string[]
 }
 
+export interface StockPrice {
+  symbol: string
+  current_price: number
+  change: number
+  change_percent: number
+  volume: number
+  market_cap: string
+  week_high: number
+  week_low: number
+  timestamp: Date
+  source: string
+}
+
+export interface Forecast {
+  ticker: string
+  arima: number | null
+  ema: number | null
+  xgboost: number | null
+  date: Date
+}
+
 // Collection names
 export const COLLECTIONS = {
   USERS: "users",
   TRANSACTIONS: "transactions",
   CHAT_CONVERSATIONS: "chat_conversations",
-  NEWS: "news",
+  NEWS: "raw_news",
   WATCHLIST: "watchlist",
   PORTFOLIO: "portfolio",
+  STOCK_PRICES: "stock_prices",
+  FORECASTS: "forecasts",
 }

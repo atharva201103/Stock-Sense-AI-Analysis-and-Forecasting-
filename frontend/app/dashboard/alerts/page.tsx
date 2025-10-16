@@ -5,108 +5,104 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Bell, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react"
+import { useEffect, useState } from "react"
 
 interface Alert {
-  id: string
-  type: "price" | "news" | "system"
-  title: string
+  stock: string
+  nature: string
+  sentiment: number
   message: string
-  timestamp: string
-  read: boolean
 }
 
 export default function AlertsPage() {
-  // Mock alerts data
-  const alerts: Alert[] = [
-    {
-      id: "1",
-      type: "price",
-      title: "Price Alert: AAPL",
-      message: "Apple Inc. has reached your target price of ₹180",
-      timestamp: "2024-01-15 10:30 AM",
-      read: false,
-    },
-    {
-      id: "2",
-      type: "news",
-      title: "Market News",
-      message: "NIFTY 50 hits all-time high of 22,000 points",
-      timestamp: "2024-01-15 09:15 AM",
-      read: false,
-    },
-    {
-      id: "3",
-      type: "system",
-      title: "System Maintenance",
-      message: "Scheduled maintenance will occur tonight from 2 AM to 4 AM IST",
-      timestamp: "2024-01-14 06:00 PM",
-      read: true,
-    },
-  ]
+  const [alerts, setAlerts] = useState<Alert[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const getAlertIcon = (type: string) => {
-    switch (type) {
-      case "price":
-        return <TrendingUp className="h-5 w-5" />
-      case "news":
-        return <Bell className="h-5 w-5" />
-      case "system":
-        return <AlertTriangle className="h-5 w-5" />
-      default:
-        return <Bell className="h-5 w-5" />
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        const response = await fetch('http://127.0.0.1:8000/api/user/alerts/', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success) {
+            setAlerts(data.alerts)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching alerts:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAlerts()
+  }, [])
+
+  const getAlertIcon = (nature: string) => {
+    if (nature === 'Negative') {
+      return <AlertTriangle className="h-5 w-5" />
+    } else if (nature === 'Positive') {
+      return <TrendingUp className="h-5 w-5" />
+    } else {
+      return <Bell className="h-5 w-5" />
     }
   }
 
-  const getAlertColor = (type: string) => {
-    switch (type) {
-      case "price":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-      case "news":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "system":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+  const getAlertColor = (nature: string) => {
+    if (nature === 'Negative') {
+      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+    } else if (nature === 'Positive') {
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+    } else {
+      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
     }
+  }
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <p>Loading alerts...</p>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (
     <DashboardLayout>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Alerts</h1>
-        <Button variant="outline">Mark All as Read</Button>
       </div>
 
       <div className="space-y-4">
         {alerts.length > 0 ? (
-          alerts.map((alert) => (
-            <Card key={alert.id} className={alert.read ? "opacity-60" : ""}>
+          alerts.map((alert, index) => (
+            <Card key={index}>
               <CardContent className="pt-6">
                 <div className="flex items-start space-x-4">
-                  <div className={`p-2 rounded-full ${getAlertColor(alert.type)}`}>
-                    {getAlertIcon(alert.type)}
+                  <div className={`p-2 rounded-full ${getAlertColor(alert.nature)}`}>
+                    {getAlertIcon(alert.nature)}
                   </div>
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">{alert.title}</h3>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant={alert.read ? "secondary" : "default"}>
-                          {alert.read ? "Read" : "New"}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">{alert.timestamp}</span>
-                      </div>
+                      <h3 className="font-semibold">{alert.stock} Alert</h3>
+                      <Badge variant="destructive">
+                        {alert.nature}
+                      </Badge>
                     </div>
                     <p className="text-muted-foreground">{alert.message}</p>
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">
-                        View Details
-                      </Button>
-                      {!alert.read && (
-                        <Button size="sm" variant="ghost">
-                          Mark as Read
-                        </Button>
-                      )}
-                    </div>
+                    <p className="text-sm text-muted-foreground">Sentiment Score: {alert.sentiment.toFixed(2)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -117,11 +113,10 @@ export default function AlertsPage() {
             <CardContent className="pt-6">
               <div className="text-center py-8">
                 <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No alerts yet</h3>
+                <h3 className="text-lg font-semibold mb-2">No alerts</h3>
                 <p className="text-muted-foreground">
-                  You don't have any alerts at the moment. Set up price alerts to stay informed about your stocks.
+                  Your portfolio stocks have positive sentiment. No alerts at this time.
                 </p>
-                <Button className="mt-4">Set Up Alerts</Button>
               </div>
             </CardContent>
           </Card>

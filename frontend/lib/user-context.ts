@@ -13,11 +13,11 @@ export async function getUserContext(userId: string, db: any) {
 
     // Get portfolio holdings
     const portfolioCollection = db.collection("portfolio")
-    const portfolio = await portfolioCollection.findOne({ userId })
+    const portfolio = await portfolioCollection.findOne({ userId: parseInt(userId) })
 
     // Get recent transactions
     const transactionsCollection = db.collection("transactions")
-    const allTransactions = await transactionsCollection.find({ userId }).sort({ date: 1 }).toArray()
+    const allTransactions = await transactionsCollection.find({ userId: parseInt(userId) }).sort({ date: 1 }).toArray()
 
     // Calculate dynamic balance based on deposits and trades
     let balance = 0
@@ -41,7 +41,12 @@ export async function getUserContext(userId: string, db: any) {
 
     // Get watchlist
     const watchlistCollection = db.collection("watchlist")
-    const watchlist = await watchlistCollection.findOne({ userId })
+    const watchlist = await watchlistCollection.findOne({ userId: parseInt(userId) })
+
+    // Combine watchlist stocks with portfolio stocks for AI context
+    const watchlistStocks = watchlist?.stocks || []
+    const portfolioStocks = portfolio?.holdings.map((h: any) => h.symbol) || []
+    const combinedWatchlist = [...new Set([...watchlistStocks, ...portfolioStocks])]
 
     // Format currency values to use ₹ instead of $
     const formattedUser = {
@@ -67,7 +72,7 @@ export async function getUserContext(userId: string, db: any) {
       user: formattedUser,
       portfolio: formattedPortfolio,
       recentTransactions: formattedTransactions,
-      watchlist: watchlist?.stocks || [],
+      watchlist: combinedWatchlist,
     }
   } catch (error) {
     console.error("Error getting user context:", error)

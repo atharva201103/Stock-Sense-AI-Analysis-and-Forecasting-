@@ -53,7 +53,8 @@ export function WatchlistTable({ refreshTrigger }: { refreshTrigger?: number }) 
         const data = await UserService.getUserWatchlist(accessToken)
         console.log("Watchlist data from API:", data)
         // Transform the data to include price information (you might want to fetch real prices)
-        const enrichedStocks = data.watchlist.stocks.map((stock: any) => ({
+        const stocks = Array.isArray(data.watchlist) ? data.watchlist : []
+        const enrichedStocks = stocks.map((stock: any) => ({
           ...stock,
           price: 1000 + Math.random() * 2000, // Mock price
           change: (Math.random() - 0.5) * 100,

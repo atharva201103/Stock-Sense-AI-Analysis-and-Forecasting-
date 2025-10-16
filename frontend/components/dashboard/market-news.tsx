@@ -69,14 +69,55 @@ export function MarketNews() {
     fetchNews()
   }, [])
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true)
-    fetchNews()
+    try {
+      const accessToken = localStorage.getItem("accessToken")
+      if (!accessToken) {
+        throw new Error("No access token found")
+      }
+
+      // Trigger scrape
+      const scrapeResponse = await fetch("/api/news/refresh", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      if (!scrapeResponse.ok) {
+        throw new Error("Failed to refresh news")
+      }
+
+      const scrapeData = await scrapeResponse.json()
+      if (!scrapeData.success) {
+        throw new Error(scrapeData.error || "Failed to refresh news")
+      }
+
+      toast({
+        title: "News refreshed",
+        description: scrapeData.message,
+      })
+
+      // Then fetch the new news
+      await fetchNews()
+    } catch (error) {
+      console.error("Error refreshing news:", error)
+      toast({
+        title: "Refresh failed",
+        description: "Failed to refresh news. Please try again.",
+        variant: "destructive",
+      })
+      setRefreshing(false)
+    }
   }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
+    if (!date || isNaN(date.getTime())) {
+      return "Recently"
+    }
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
 
     if (diffInHours < 1) {
@@ -89,7 +130,7 @@ export function MarketNews() {
   }
 
   return (
-    <Card className="col-span-1">
+    <Card className="col-span-2">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle>Market News</CardTitle>
@@ -101,7 +142,7 @@ export function MarketNews() {
         </Button>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[400px] pr-4">
+        <ScrollArea className="h-[600px] pr-4">
           {loading ? (
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map((i) => (

@@ -7,45 +7,87 @@ import { StockChart } from "@/components/dashboard/stock-chart"
 import { TradingPanel } from "@/components/dashboard/trading-panel"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { MarketService, type MarketData } from "@/services/market-service"
 
-// Sample stock data
-const stocksData = {
-  AAPL: { symbol: "AAPL", name: "Apple Inc.", currentPrice: 187.32, change: 1.25, changePercent: 0.67 },
-  MSFT: { symbol: "MSFT", name: "Microsoft Corporation", currentPrice: 415.5, change: 2.1, changePercent: 0.51 },
-  GOOGL: { symbol: "GOOGL", name: "Alphabet Inc.", currentPrice: 175.2, change: 0.5, changePercent: 0.29 },
-  AMZN: { symbol: "AMZN", name: "Amazon.com, Inc.", currentPrice: 185.95, change: -1.2, changePercent: -0.64 },
-  NVDA: { symbol: "NVDA", name: "NVIDIA Corporation", currentPrice: 950.02, change: -0.75, changePercent: -0.08 },
+// Sample stock data (fallback)
+const stocksData: Record<string, MarketData> = {
+  AAPL: { symbol: "AAPL", name: "Apple Inc.", currentPrice: 187.32, change: 1.25, changePercent: 0.67, lastUpdated: new Date().toISOString() },
+  MSFT: { symbol: "MSFT", name: "Microsoft Corporation", currentPrice: 415.5, change: 2.1, changePercent: 0.51, lastUpdated: new Date().toISOString() },
+  GOOGL: { symbol: "GOOGL", name: "Alphabet Inc.", currentPrice: 175.2, change: 0.5, changePercent: 0.29, lastUpdated: new Date().toISOString() },
+  AMZN: { symbol: "AMZN", name: "Amazon.com, Inc.", currentPrice: 185.95, change: -1.2, changePercent: -0.64, lastUpdated: new Date().toISOString() },
+  NVDA: { symbol: "NVDA", name: "NVIDIA Corporation", currentPrice: 950.02, change: -0.75, changePercent: -0.08, lastUpdated: new Date().toISOString() },
   "NIFTY 50": {
     symbol: "NIFTY 50",
     name: "National Stock Exchange of India Index",
     currentPrice: 22450.25,
     change: 125.75,
     changePercent: 0.56,
+    lastUpdated: new Date().toISOString(),
   },
 }
 
 export default function TradePage() {
   const searchParams = useSearchParams()
-  const [stockData, setStockData] = useState(stocksData["AAPL"])
+  const [stockData, setStockData] = useState<MarketData>(stocksData["AAPL"])
   const [activeTab, setActiveTab] = useState<"buy" | "sell">("buy")
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const symbol = searchParams.get("symbol")
-    const action = searchParams.get("action") as "buy" | "sell" | null
+    const fetchStockData = async () => {
+      const symbol = searchParams.get("symbol") || "AAPL"
+      const action = searchParams.get("action") as "buy" | "sell" | null
 
-    if (symbol && stocksData[symbol]) {
-      setStockData(stocksData[symbol])
+      if (action && (action === "buy" || action === "sell")) {
+        setActiveTab(action)
+      }
+
+      try {
+        const data = await MarketService.getMarketData(symbol)
+        setStockData(data)
+      } catch (err) {
+        console.error("Error fetching stock data:", err)
+        // Fallback to sample data
+        if (stocksData[symbol as keyof typeof stocksData]) {
+          setStockData(stocksData[symbol as keyof typeof stocksData])
+        } else {
+          setStockData({
+            symbol: symbol,
+            name: `${symbol} Stock`,
+            currentPrice: 100,
+            change: 0,
+            changePercent: 0,
+            lastUpdated: new Date().toISOString(),
+          })
+        }
+      } finally {
+        setLoading(false)
+      }
     }
 
-    if (action && (action === "buy" || action === "sell")) {
-      setActiveTab(action)
-    }
+    fetchStockData()
+
+    // Refresh data every 5 minutes
+    const interval = setInterval(fetchStockData, 5 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [searchParams])
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Loading market data...</div>
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   return (
     <DashboardLayout>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Trade {stockData.symbol}</h1>
+        <div className="text-sm text-muted-foreground">
+          Last updated: {new Date(stockData.lastUpdated).toLocaleTimeString()}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">

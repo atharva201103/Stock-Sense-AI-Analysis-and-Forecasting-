@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'aut',
     'rest_framework_simplejwt.token_blacklist',
+    'django_apscheduler',
 
 ]
 

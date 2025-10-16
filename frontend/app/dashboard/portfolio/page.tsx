@@ -66,31 +66,60 @@ export default function PortfolioPage() {
           throw new Error(data.error || "Failed to fetch portfolio")
         }
 
-        // Transform portfolio data and add current prices (in a real app, these would come from an API)
-        const portfolioHoldings = data.portfolio.holdings.map((holding: PortfolioHolding) => {
-          // Simulate current price with a random variation from avg price
-          const priceVariation = Math.random() * 0.2 - 0.1 // -10% to +10%
-          const currentPrice = holding.avgPrice * (1 + priceVariation)
-          const marketValue = holding.shares * currentPrice
-          const totalReturn = marketValue - holding.totalCost
-          const totalReturnPercent = (totalReturn / holding.totalCost) * 100
+        // Transform the data to include real-time price information
+        const holdingsWithPrices = await Promise.all(
+          data.portfolio.holdings.map(async (holding: PortfolioHolding) => {
+            try {
+              // Scrape current price from Moneycontrol
+              const priceUrl = `https://www.moneycontrol.com/india/stockpricequote/${holding.symbol.toLowerCase()}/${holding.symbol.toLowerCase()}/${holding.symbol.toUpperCase()}`
+              const priceResponse = await fetch(priceUrl)
+              const priceHtml = await priceResponse.text()
+              const priceMatch = priceHtml.match(/<span[^>]*id="nsecp"[^>]*>([^<]+)<\/span>/)
+              const currentPrice = priceMatch ? parseFloat(priceMatch[1].replace(/,/g, '')) : holding.avgPrice
 
-          // Simulate day change
-          const dayChangePercent = Math.random() * 4 - 2 // -2% to +2%
-          const dayChange = marketValue * (dayChangePercent / 100)
+              // Calculate market value and returns
+              const marketValue = holding.shares * currentPrice
+              const totalReturn = marketValue - holding.totalCost
+              const totalReturnPercent = (totalReturn / holding.totalCost) * 100
 
-          return {
-            ...holding,
-            currentPrice,
-            marketValue,
-            totalReturn,
-            totalReturnPercent,
-            dayChange,
-            dayChangePercent,
-          }
-        })
+              // Mock day change (in real app, get from API)
+              const dayChangePercent = Math.random() * 4 - 2 // -2% to +2%
+              const dayChange = marketValue * (dayChangePercent / 100)
 
-        setHoldings(portfolioHoldings)
+              return {
+                ...holding,
+                currentPrice,
+                marketValue,
+                totalReturn,
+                totalReturnPercent,
+                dayChange,
+                dayChangePercent,
+              }
+            } catch (error) {
+              console.error(`Error fetching price for ${holding.symbol}:`, error)
+              // Fallback to mock data
+              const priceVariation = Math.random() * 0.2 - 0.1 // -10% to +10%
+              const currentPrice = holding.avgPrice * (1 + priceVariation)
+              const marketValue = holding.shares * currentPrice
+              const totalReturn = marketValue - holding.totalCost
+              const totalReturnPercent = (totalReturn / holding.totalCost) * 100
+              const dayChangePercent = Math.random() * 4 - 2 // -2% to +2%
+              const dayChange = marketValue * (dayChangePercent / 100)
+
+              return {
+                ...holding,
+                currentPrice,
+                marketValue,
+                totalReturn,
+                totalReturnPercent,
+                dayChange,
+                dayChangePercent,
+              }
+            }
+          })
+        )
+
+        setHoldings(holdingsWithPrices)
       } catch (error) {
         console.error("Error fetching portfolio:", error)
         setError("Failed to load portfolio data. Please try again later.")

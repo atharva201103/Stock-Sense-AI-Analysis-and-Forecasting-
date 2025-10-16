@@ -79,16 +79,22 @@ export async function GET(request: Request) {
 
     const { db } = await connectToDatabase()
 
-    // Get news from the news collection
-    const newsCollection = db.collection("news")
-    let news = await newsCollection.find().sort({ date: -1 }).limit(10).toArray()
+    // Get news from the raw_news collection
+    const newsCollection = db.collection("raw_news")
+    const rawNews = await newsCollection.find().sort({ date: -1 }).limit(10).toArray()
 
-    // If no news in database, seed with sample data
-    if (news.length === 0) {
-      console.log("No news found in database, seeding with sample data")
-      await newsCollection.insertMany(sampleNews)
-      news = sampleNews
-    }
+    // Transform MongoDB documents to match frontend interface
+    const news = rawNews.map((item) => ({
+      id: item._id.toString(),
+      title: item.title,
+      content: item.content,
+      summary: item.summary,
+      source: item.source,
+      date: item.date,
+      url: item.url,
+      category: item.category,
+      tags: item.tags,
+    }))
 
     return NextResponse.json({
       success: true,

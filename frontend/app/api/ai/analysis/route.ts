@@ -19,9 +19,9 @@ export async function GET(request: Request) {
 
     const { db } = await connectToDatabase()
 
-    // Get latest news
-    const newsCollection = db.collection(COLLECTIONS.NEWS)
-    const latestNews = await newsCollection.find().sort({ date: -1 }).limit(5).toArray()
+    // Get latest news from raw_news collection
+    const newsCollection = db.collection("raw_news")
+    const latestNews = await newsCollection.find().sort({ date: -1 }).limit(3).toArray()
 
     // Get user context
     const userContext = await getUserContext(userData.id.toString(), db)
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "llama3.2",
+        model: "deepseek-r1:1.5b",
         prompt: prompt,
         stream: false,
       }),
@@ -63,14 +63,28 @@ export async function GET(request: Request) {
     }
 
     if (ollamaData) {
+      // Remove the <think> section from DeepSeek response
+      let analysis = ollamaData.response
+      const thinkStart = analysis.indexOf('<think>')
+      const thinkEnd = analysis.indexOf('</think>')
+      if (thinkStart !== -1 && thinkEnd !== -1) {
+        analysis = analysis.substring(thinkEnd + 8).trim() // Remove <think> to </think> and trim
+      }
       return NextResponse.json({
         success: true,
-        analysis: ollamaData.response,
+        analysis: analysis,
       })
     } else {
-      // Fallback analysis if AI service fails
+      // Fallback analysis if AI service fails - include latest news
+      const newsText = latestNews.length > 0
+        ? latestNews.map((news) => `- ${news.title}`).join("\n")
+        : "No recent news available."
+
       const fallbackAnalysis = `
         # Daily Market Analysis
+
+        ## Latest News Summary
+        ${newsText}
 
         ## Market Overview
         Markets are showing mixed signals today with technology stocks leading gains while energy sectors face pressure from changing commodity prices.

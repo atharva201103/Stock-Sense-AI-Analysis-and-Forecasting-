@@ -36,8 +36,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      const { access } = await AuthService.refreshToken(refreshTokenValue)
+      const { access, refresh } = await AuthService.refreshToken(refreshTokenValue)
       localStorage.setItem("accessToken", access)
+      localStorage.setItem("refreshToken", refresh)
 
       // Update user data with new token
       const userData = await AuthService.getUserProfile(access)

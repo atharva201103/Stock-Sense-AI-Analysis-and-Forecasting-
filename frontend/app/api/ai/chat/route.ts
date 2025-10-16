@@ -31,6 +31,43 @@ export async function POST(request: Request) {
     const userContext = await getUserContext(userData.id.toString(), db)
     console.log("User context for AI:", JSON.stringify(userContext, null, 2))
 
+    // Scrape news if message is about news
+    let newsText = ''
+    if (message.toLowerCase().includes('news')) {
+      try {
+        const newsResponse = await fetch('https://www.moneycontrol.com/news/business/stocks/')
+        const newsHtml = await newsResponse.text()
+        // Simple parsing - in production, use a proper scraper
+        const titleMatches = newsHtml.match(/<h2[^>]*>(.*?)<\/h2>/g) || []
+        const titles = titleMatches.slice(0, 5).map(match => match.replace(/<[^>]*>/g, '').trim())
+        newsText = titles.length > 0 ? `\n\nRecent Stock News:\n${titles.map(title => `- ${title}`).join('\n')}` : ''
+      } catch (error) {
+        console.error('Error scraping news:', error)
+      }
+    }
+
+    // Add technical analysis if message is about portfolio or advice
+    let technicalText = ''
+    if ((message.toLowerCase().includes('portfolio') || message.toLowerCase().includes('advice') || message.toLowerCase().includes('analysis')) && userContext.portfolio?.length > 0) {
+      technicalText = '\n\nTechnical Analysis for Portfolio Stocks:\n'
+      for (const stock of userContext.portfolio) {
+        // Mock calculations - in production, use real data
+        const mockPrices = Array.from({length: 50}, () => stock.avgPrice + (Math.random() - 0.5) * stock.avgPrice * 0.2)
+        const sma20 = mockPrices.slice(-20).reduce((a, b) => a + b, 0) / 20
+        const sma50 = mockPrices.reduce((a, b) => a + b, 0) / 50
+        const gains = mockPrices.slice(1).map((price, i) => price - mockPrices[i]).filter(g => g > 0)
+        const losses = mockPrices.slice(1).map((price, i) => mockPrices[i] - price).filter(l => l > 0)
+        const avgGain = gains.reduce((a, b) => a + b, 0) / gains.length || 0
+        const avgLoss = losses.reduce((a, b) => a + b, 0) / losses.length || 0
+        const rs = avgGain / avgLoss
+        const rsi = 100 - (100 / (1 + rs))
+        let signal = 'Hold'
+        if (sma20 > sma50 && rsi < 70) signal = 'Buy'
+        else if (sma20 < sma50 && rsi > 30) signal = 'Sell'
+        technicalText += `- ${stock.symbol}: SMA20: ₹${sma20.toFixed(2)}, SMA50: ₹${sma50.toFixed(2)}, RSI: ${rsi.toFixed(2)}, Signal: ${signal}\n`
+      }
+    }
+
     // Create prompt with user context
     const contextText = `
 User Information:
@@ -50,7 +87,7 @@ ${userContext.recentTransactions?.length > 0
 Watchlist:
 ${userContext.watchlist?.length > 0
   ? userContext.watchlist.map((s: any) => `- ${s.symbol}: ${s.name}`).join('\n')
-  : 'No stocks in watchlist'}
+  : 'No stocks in watchlist'}${newsText}${technicalText}
     `.trim()
 
     const prompt = `
@@ -72,7 +109,9 @@ IMPORTANT GUIDELINES:
 9. For charts, use plt.figure(figsize=(10, 6)) and add proper grid lines, legends, and axis labels.
 10. Only use matplotlib and numpy for charts. Do not import or use any other libraries like yfinance, pandas, or external data sources.
 11. Create charts using sample or mock data if needed, based on the user's portfolio or general market knowledge.
-12. Respond as Trada, addressing the user directly using "you" and "your" to refer to the user.
+12. When providing news, analyze the sentiment of each news item (positive, negative, or neutral) and include it.
+13. For portfolio analysis, use technical indicators like Moving Averages (SMA 20, SMA 50) and RSI to suggest buy/sell/hold signals. Use mock price data for calculations.
+14. Respond as Trada, addressing the user directly using "you" and "your" to refer to the user.
 
 The user asks: "${message}"
 

@@ -56,7 +56,7 @@ export const AuthService = {
   },
 
   // Refresh token
-  refreshToken: async (refreshToken: string): Promise<{ access: string }> => {
+  refreshToken: async (refreshToken: string): Promise<{ access: string, refresh: string }> => {
     const response = await fetch(`${API_URL}/api/token/refresh/`, {
       method: "POST",
       headers: {
@@ -66,7 +66,8 @@ export const AuthService = {
     })
 
     if (!response.ok) {
-      throw new Error("Token refresh failed")
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+      throw new Error(errorData.error || `Token refresh failed: ${response.status} ${response.statusText}`)
     }
 
     return response.json()

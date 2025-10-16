@@ -1,15 +1,8 @@
-# TODO: Fix Frontend-Backend Communication and Backend User Model
+# TODO: Integrate Real-Time News Scraper with Dashboard
 
-## Backend Changes
-- [x] Update backend/aut/models.py: Add UserProfile model with balance field.
-- [x] Update backend/aut/serializers.py: Add PortfolioSerializer and UserProfileSerializer.
-- [x] Update backend/aut/views.py: Modify PortfolioView and WatchlistView to use Django models; add BalanceView.
-- [x] Update backend/aut/urls.py: Add balance endpoint, fix watchlist URL to include 'api/' prefix.
-- [x] Run Django migrations for new models.
-
-## Frontend Changes
-- [x] Update frontend/services/user-service.ts: Change API_URL to Django backend URL, adjust endpoint paths to match Django URLs.
-
-## Testing
-- [x] Test API endpoints for portfolio, watchlist, balance.
-- [x] Verify frontend can fetch and update user data correctly.
+## Tasks
+- [x] Move scraper command to main backend: Copy scrape_news.py from temp_repo to backend/aut/management/commands/
+- [x] Update scraper to fetch detailed news data and store in processed_news collection in trada_db
+- [x] Update MongoDB schemas for processed_news collection
+- [x] Update frontend API to fetch from processed_news collection in trada_db
+- [x] Test the scraper and API integration

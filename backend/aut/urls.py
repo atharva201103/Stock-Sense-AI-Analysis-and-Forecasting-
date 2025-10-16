@@ -1,6 +1,6 @@
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.urls import path
-from aut.views import RegisterView, LoginView , ModelView , UserFromTokenView , PortfolioView, WatchlistView, BalanceView
+from aut.views import RegisterView, LoginView , ModelView , UserFromTokenView , PortfolioView, WatchlistView, BalanceView, AlertsView
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -14,6 +14,7 @@ urlpatterns = [
     path('api/user/portfolio/', PortfolioView.as_view(), name='user-portfolio'),
     path('api/user/watchlist/', WatchlistView.as_view(), name='user-watchlist'),
     path('api/user/balance/', BalanceView.as_view(), name='user-balance'),
+    path('api/user/alerts/', AlertsView.as_view(), name='user-alerts'),
 
 
 

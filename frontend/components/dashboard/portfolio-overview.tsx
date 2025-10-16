@@ -4,15 +4,6 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
-// Default portfolio data if none is provided
-const defaultPortfolioData = [
-  { name: "AAPL", value: 35, shares: 25, price: 187.32, change: 1.25 },
-  { name: "MSFT", value: 25, shares: 12, price: 415.5, change: 2.1 },
-  { name: "NVDA", value: 20, shares: 8, price: 950.02, change: -0.75 },
-  { name: "GOOGL", value: 15, shares: 10, price: 175.2, change: 0.5 },
-  { name: "AMZN", value: 5, shares: 3, price: 185.95, change: -1.2 },
-]
-
 // Colors for the pie chart
 const COLORS = ["#4f46e5", "#8b5cf6", "#ec4899", "#f43f5e", "#f97316"]
 
@@ -21,8 +12,37 @@ interface PortfolioOverviewProps {
 }
 
 export function PortfolioOverview({ portfolioData }: PortfolioOverviewProps) {
-  // Use provided data or default if none is available
-  const data = portfolioData?.holdings || defaultPortfolioData
+  // Use provided data
+  const rawData = portfolioData?.portfolio?.holdings || []
+
+  if (rawData.length === 0) {
+    return (
+      <Card className="col-span-2">
+        <CardHeader>
+          <CardTitle>Portfolio Overview</CardTitle>
+          <CardDescription>Your current holdings and allocation</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">No portfolio holdings yet. Start trading to build your portfolio.</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Transform data with mock current prices
+  const data = rawData.map((stock: any) => {
+    const priceVariation = Math.random() * 0.2 - 0.1 // -10% to +10%
+    const currentPrice = stock.avgPrice * (1 + priceVariation)
+    const changePercent = Math.random() * 4 - 2 // -2% to +2%
+    return {
+      name: stock.name || stock.symbol,
+      shares: stock.shares,
+      price: currentPrice,
+      change: changePercent,
+    }
+  })
 
   // Calculate total value and percentages for pie chart
   const totalValue = data.reduce((sum: number, stock: any) => sum + stock.shares * stock.price, 0)

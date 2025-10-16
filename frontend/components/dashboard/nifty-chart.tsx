@@ -22,7 +22,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 
-// Sample data for the candle chart
+// Generate historical candle data (for demo purposes - in production, fetch from API)
 const generateCandleData = (days: number, startPrice: number, volatility: number) => {
   const data = []
   let prevClose = startPrice

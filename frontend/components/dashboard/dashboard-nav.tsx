@@ -12,6 +12,7 @@ import {
   Settings,
   HelpCircle,
   Bell,
+  IndianRupee,
 } from "lucide-react"
 import {
   Sidebar,
@@ -52,7 +53,7 @@ export function DashboardNav() {
 
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <a href="/dashboard/market/india">
+              <a href="/dashboard/market">
                 <Globe className="h-5 w-5" />
                 <span>Indian Markets</span>
               </a>
@@ -93,7 +94,7 @@ export function DashboardNav() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
               <a href="/dashboard/trade">
-                <DollarSign className="h-5 w-5" />
+                <IndianRupee className="h-5 w-5" />
                 <span>Trade</span>
               </a>
             </SidebarMenuButton>

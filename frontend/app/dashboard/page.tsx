@@ -10,6 +10,7 @@ import { MarketNews } from "@/components/dashboard/market-news"
 import { DailyAnalysis } from "@/components/dashboard/daily-analysis"
 import { useAuth } from "@/contexts/auth-context"
 import { UserService } from "@/services/user-service"
+import { MarketService, type MarketData } from "@/services/market-service"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, RefreshCw } from "lucide-react"
@@ -22,15 +23,14 @@ export default function DashboardPage() {
   const [portfolioData, setPortfolioData] = useState<any>(null)
   const [watchlistData, setWatchlistData] = useState<any>(null)
   const [retryCount, setRetryCount] = useState(0)
-
-  // Sample Nifty data
-  const niftyData = {
+  const [niftyData, setNiftyData] = useState<MarketData>({
     symbol: "NIFTY 50",
     name: "National Stock Exchange of India Index",
     currentPrice: 22450.25,
     change: 125.75,
     changePercent: 0.56,
-  }
+    lastUpdated: new Date().toISOString(),
+  })
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -59,11 +59,29 @@ export default function DashboardPage() {
       }
     }
 
+    const fetchNiftyData = async () => {
+      try {
+        const data = await MarketService.getMarketData("NIFTY 50")
+        setNiftyData(data)
+      } catch (err) {
+        console.error("Error fetching NIFTY data:", err)
+        // Keep default data if API fails
+      }
+    }
+
     if (user) {
       fetchUserData()
     } else {
       setLoading(false)
     }
+
+    // Fetch NIFTY data regardless of user auth status
+    fetchNiftyData()
+
+    // Set up interval to refresh NIFTY data every 5 minutes
+    const interval = setInterval(fetchNiftyData, 5 * 60 * 1000)
+
+    return () => clearInterval(interval)
   }, [user, retryCount])
 
   const handleRetry = () => {

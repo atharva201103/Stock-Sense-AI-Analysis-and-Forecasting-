@@ -50,6 +50,7 @@ export function AiChat() {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingConversations, setIsLoadingConversations] = useState(true)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const lastMessageRef = useRef<HTMLDivElement>(null)
 
   // Load user's conversations from MongoDB
   useEffect(() => {
@@ -148,9 +149,8 @@ export function AiChat() {
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      const scrollArea = scrollAreaRef.current
-      scrollArea.scrollTop = scrollArea.scrollHeight
+    if (lastMessageRef.current) {
+      lastMessageRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
     }
   }, [messages])
 
@@ -443,8 +443,12 @@ export function AiChat() {
       <CardContent className="flex-1 overflow-hidden p-0 pt-4">
         <ScrollArea className="h-[calc(600px-12rem)] px-4" ref={scrollAreaRef}>
           <div className="flex flex-col gap-4 py-4">
-            {messages.map((message) => (
-              <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+            {messages.map((message, index) => (
+              <div
+                key={message.id}
+                ref={index === messages.length - 1 ? lastMessageRef : null}
+                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+              >
                 <div className={`flex max-w-[80%] gap-3 ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
                   <Avatar className="h-8 w-8">
                     {message.role === "assistant" ? (
