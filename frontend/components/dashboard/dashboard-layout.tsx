@@ -27,7 +27,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { theme, setTheme } = useTheme()
-  const [notifications] = useState(3)
+  const [notifications] = useState(0)
   const { user, logout, refreshToken } = useAuth()
   const router = useRouter()
 

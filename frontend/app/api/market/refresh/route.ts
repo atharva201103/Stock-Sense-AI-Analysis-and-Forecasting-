@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
     // Run the Django management command with virtual environment
     const { stdout, stderr } = await execAsync(
-      "source venv/bin/activate && python manage.py scrape_news",
+      "source venv/bin/activate && python manage.py scrape_stock_prices",
       {
         cwd: backendPath,
         timeout: 300000, // 5 minutes timeout
@@ -33,24 +33,24 @@ export async function POST(request: Request) {
       }
     )
 
-    console.log("Scrape news stdout:", stdout)
+    console.log("Scrape stock prices stdout:", stdout)
     if (stderr) {
-      console.log("Scrape news stderr:", stderr)
+      console.log("Scrape stock prices stderr:", stderr)
     }
 
     // Parse the output to extract the count
-    const countMatch = stdout.match(/Successfully scraped (\d+) news items/)
+    const countMatch = stdout.match(/Successfully scraped (\d+) stock prices/)
     const count = countMatch ? parseInt(countMatch[1]) : 0
 
     return NextResponse.json({
       success: true,
-      message: `Successfully scraped and processed ${count} news items`
+      message: `Successfully scraped and processed ${count} stock prices`
     })
   } catch (error) {
-    console.error("Error running scrape_news command:", error)
+    console.error("Error running scrape_stock_prices command:", error)
     return NextResponse.json({
       success: false,
-      error: `Failed to scrape news: ${error instanceof Error ? error.message : 'Unknown error'}`
+      error: `Failed to scrape stock prices: ${error instanceof Error ? error.message : 'Unknown error'}`
     }, { status: 500 })
   }
 }

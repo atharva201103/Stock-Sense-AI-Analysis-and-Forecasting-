@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-&$0g7sfe@7x*@hgrwy(sq-pg$%wbb_r&eljba^s1&w($o&^u5f'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS = ["*"]
 
@@ -155,8 +155,7 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "ALGORITHM": "HS256",
-   "SIGNING_KEY": os.environ.get("JWT_SECRET_KEY", "fallback-secret")
-
+    "SIGNING_KEY": os.environ.get("JWT_SECRET_KEY", "fallback-secret")
 }
 
 MEDIA_URL = '/media/'
@@ -175,5 +174,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            'timeout': 30,  # Increase timeout to 30 seconds
+        }
     }
 }

@@ -6,3 +6,5 @@
 - [x] Update MongoDB schemas for processed_news collection
 - [x] Update frontend API to fetch from processed_news collection in trada_db
 - [x] Test the scraper and API integration
+- [x] Fix database locking issues by implementing file locking and reducing scheduler frequency
+- [x] Configure scheduler to run news scraping every 15 minutes and stock prices every 10 minutes

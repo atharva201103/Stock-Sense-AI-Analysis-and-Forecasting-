@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
+import { exec } from "child_process"
+import { promisify } from "util"
+import path from "path"
+
+const execAsync = promisify(exec)
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,6 +14,49 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Symbol parameter is required" }, { status: 400 })
     }
 
+    // Get the backend directory path
+    const backendPath = path.join(process.cwd(), "..", "backend")
+
+    // Run the Django management command to get stock prices from database
+    try {
+      const { stdout, stderr } = await execAsync(
+        `python manage.py shell -c "
+from aut.mongodb_client import get_db
+import json
+db = get_db()
+stock_prices_collection = db['stock_prices']
+stock = stock_prices_collection.find_one({'symbol': '${symbol}'})
+if stock:
+    result = {
+        'symbol': stock['symbol'],
+        'name': stock.get('name', stock['symbol']),
+        'currentPrice': stock['current_price'],
+        'change': stock['change'],
+        'changePercent': stock['change_percent'],
+        'volume': stock.get('volume', 0),
+        'lastUpdated': stock['timestamp'].isoformat() if stock.get('timestamp') else None
+    }
+    print(json.dumps(result))
+else:
+    print('null')
+"`,
+        {
+          cwd: backendPath,
+          timeout: 10000, // 10 seconds timeout
+          maxBuffer: 1024 * 1024 // 1MB buffer
+        }
+      )
+
+      const result = stdout.trim()
+      if (result && result !== 'null') {
+        const stockData = JSON.parse(result)
+        return NextResponse.json(stockData)
+      }
+    } catch (dbError) {
+      console.log("Database query failed, falling back to APIs:", dbError)
+    }
+
+    // Fallback to original API logic if database query fails
     // For NIFTY 50, use NSE API or Yahoo Finance
     if (symbol === "NIFTY 50") {
       try {

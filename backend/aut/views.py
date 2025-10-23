@@ -24,6 +24,7 @@ import tensorflow as tf
 from .mongodb_client import get_db
 import numpy as np
 import re
+from bson import ObjectId
 
 
 
@@ -532,71 +533,56 @@ class AlertsView(APIView):
 
     def get(self, request):
         try:
-            # Load models
-            xgb_model = None
-            le = None
-            try:
-                with open('models/xgb_model.pkl', 'rb') as f:
-                    xgb_model = pickle.load(f)
-                with open('models/label_encoder.pkl', 'rb') as f:
-                    le = pickle.load(f)
-            except Exception as e:
-                print("Error loading models for alerts:", e)
-                return Response({"success": False, "error": "Models not available"}, status=500)
-
-            # Get user portfolio
             db = get_db()
-            portfolio_collection = db.portfolio
-            transactions_collection = db.transactions
+            alerts_collection = db['user_alerts']
             user_id = request.user.id
-            portfolio = portfolio_collection.find_one({"userId": user_id})
-            holdings = []
-            if portfolio:
-                holdings = portfolio.get('holdings', [])
-            else:
-                # Calculate from transactions
-                transactions = list(transactions_collection.find({"userId": user_id}).sort("date", 1))
-                holdings_dict = {}
-                for tx in transactions:
-                    symbol = tx.get("symbol")
-                    if tx.get("type") == "buy":
-                        if symbol not in holdings_dict:
-                            holdings_dict[symbol] = {"symbol": symbol, "shares": 0, "totalCost": 0}
-                        holdings_dict[symbol]["shares"] += tx.get("shares", 0)
-                        holdings_dict[symbol]["totalCost"] += tx.get("amount", 0)
-                    elif tx.get("type") == "sell":
-                        if symbol in holdings_dict:
-                            holdings_dict[symbol]["shares"] -= tx.get("shares", 0)
-                            holdings_dict[symbol]["totalCost"] -= tx.get("amount", 0)
-                            if holdings_dict[symbol]["shares"] <= 0:
-                                del holdings_dict[symbol]
-                holdings = list(holdings_dict.values())
 
-            # Get alerts for negative sentiment
-            alerts = []
-            processed_collection = db['processed_news']
-            for holding in holdings:
-                stock = holding['symbol']
-                news = list(processed_collection.find({'stock': stock}).sort('date', -1).limit(5))
-                if news:
-                    avg_sentiment = np.mean([n.get('Sentiment Score', 0) for n in news])
-                    avg_relevance = np.mean([n.get('Relevance Score', 5) for n in news])
-                    volatility = news[0].get('Volatility Indicator', 'Medium')
-                    impact = news[0].get('Impact Level', 'Medium')
-                    vol_map = {'Low': 0, 'Medium': 1, 'High': 2}
-                    imp_map = {'Low': 0, 'Medium': 1, 'High': 2}
-                    features = [avg_sentiment, avg_relevance, vol_map.get(volatility, 1), imp_map.get(impact, 1)]
-                    pred = xgb_model.predict([features])
-                    nature = le.inverse_transform(pred)[0]
-                    if nature != 'Positive':
-                        alerts.append({
-                            'stock': stock,
-                            'nature': nature,
-                            'sentiment': avg_sentiment,
-                            'message': f"Negative sentiment for {stock}: {nature}"
-                        })
+            # Get unread alerts for the user
+            alerts = list(alerts_collection.find({
+                'user_id': user_id,
+                'is_read': False
+            }).sort('created_at', -1).limit(20))
 
-            return Response({"success": True, "alerts": alerts})
+            # Format alerts for frontend
+            formatted_alerts = []
+            for alert in alerts:
+                formatted_alerts.append({
+                    'id': str(alert['_id']),
+                    'stock': alert.get('stock'),
+                    'alert_type': alert.get('alert_type'),
+                    'message': alert.get('message'),
+                    'sentiment_score': alert.get('sentiment_score'),
+                    'predicted_nature': alert.get('predicted_nature'),
+                    'created_at': alert.get('created_at').isoformat() if alert.get('created_at') else None,
+                    'is_read': alert.get('is_read', False)
+                })
+
+            return Response({"success": True, "alerts": formatted_alerts})
         except Exception as e:
             print("Error fetching alerts:", str(e))
+            return Response({"success": False, "error": str(e)}, status=500)
+
+    def post(self, request):
+        try:
+            alert_id = request.data.get('alert_id')
+            if not alert_id:
+                return Response({"success": False, "error": "Alert ID is required"}, status=400)
+
+            db = get_db()
+            alerts_collection = db['user_alerts']
+            user_id = request.user.id
+
+            # Mark alert as read
+            result = alerts_collection.update_one(
+                {'_id': ObjectId(alert_id), 'user_id': user_id},
+                {'$set': {'is_read': True}}
+            )
+
+            if result.modified_count > 0:
+                return Response({"success": True, "message": "Alert marked as read"})
+            else:
+                return Response({"success": False, "error": "Alert not found or already read"}, status=404)
+
+        except Exception as e:
+            print("Error updating alert:", str(e))
             return Response({"success": False, "error": str(e)}, status=500)

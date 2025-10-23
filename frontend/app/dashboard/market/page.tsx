@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, TrendingUp, TrendingDown } from "lucide-react"
+import { AlertCircle, TrendingUp, TrendingDown, RefreshCw } from "lucide-react"
 import { MarketService, type MarketData } from "@/services/market-service"
+import { useToast } from "@/hooks/use-toast"
 
 // Common Indian stocks
 const INDIAN_STOCKS = [
@@ -18,27 +19,72 @@ const INDIAN_STOCKS = [
 ]
 
 export default function MarketPage() {
+  const { toast } = useToast()
   const [stocks, setStocks] = useState<MarketData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const fetchStocksData = async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const stockPromises = INDIAN_STOCKS.map(symbol => MarketService.getMarketData(symbol))
+      const stocksData = await Promise.all(stockPromises)
+      setStocks(stocksData)
+    } catch (err) {
+      console.error("Error fetching stocks data:", err)
+      setError("Failed to load market data. Please try again later.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      const accessToken = localStorage.getItem("accessToken")
+      if (!accessToken) {
+        throw new Error("No access token found")
+      }
+
+      // Trigger scrape
+      const scrapeResponse = await fetch("/api/market/refresh", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      if (!scrapeResponse.ok) {
+        throw new Error("Failed to refresh market data")
+      }
+
+      const scrapeData = await scrapeResponse.json()
+      if (!scrapeData.success) {
+        throw new Error(scrapeData.error || "Failed to refresh market data")
+      }
+
+      toast({
+        title: "Market data refreshed",
+        description: scrapeData.message,
+      })
+
+      // Then fetch the new data
+      await fetchStocksData()
+    } catch (error) {
+      console.error("Error refreshing market data:", error)
+      toast({
+        title: "Refresh failed",
+        description: "Failed to refresh market data. Please try again.",
+        variant: "destructive",
+      })
+      setRefreshing(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchStocksData = async () => {
-      setLoading(true)
-      setError(null)
-
-      try {
-        const stockPromises = INDIAN_STOCKS.map(symbol => MarketService.getMarketData(symbol))
-        const stocksData = await Promise.all(stockPromises)
-        setStocks(stocksData)
-      } catch (err) {
-        console.error("Error fetching stocks data:", err)
-        setError("Failed to load market data. Please try again later.")
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchStocksData()
 
     // Refresh data every 5 minutes
@@ -93,9 +139,15 @@ export default function MarketPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Indian Market</h1>
-          <p className="text-muted-foreground">Real-time data for major Indian stocks</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Indian Market</h1>
+            <p className="text-muted-foreground">Real-time data for major Indian stocks</p>
+          </div>
+          <Button variant="outline" size="icon" onClick={handleRefresh} disabled={loading || refreshing}>
+            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            <span className="sr-only">Refresh market data</span>
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

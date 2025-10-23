@@ -8,10 +8,14 @@ import { Bell, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react"
 import { useEffect, useState } from "react"
 
 interface Alert {
+  id: string
   stock: string
-  nature: string
-  sentiment: number
+  alert_type: string
   message: string
+  sentiment_score: number
+  predicted_nature: string
+  created_at: string
+  is_read: boolean
 }
 
 export default function AlertsPage() {
@@ -20,14 +24,14 @@ export default function AlertsPage() {
 
   useEffect(() => {
     const fetchAlerts = async () => {
-      const token = localStorage.getItem('access_token')
+      const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token')
       if (!token) {
         setLoading(false)
         return
       }
 
       try {
-        const response = await fetch('http://127.0.0.1:8000/api/user/alerts/', {
+        const response = await fetch('http://127.0.0.1:8001/api/user/alerts/', {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -38,6 +42,8 @@ export default function AlertsPage() {
           if (data.success) {
             setAlerts(data.alerts)
           }
+        } else {
+          console.error('Failed to fetch alerts:', response.status, response.statusText)
         }
       } catch (error) {
         console.error('Error fetching alerts:', error)
@@ -49,23 +55,50 @@ export default function AlertsPage() {
     fetchAlerts()
   }, [])
 
-  const getAlertIcon = (nature: string) => {
-    if (nature === 'Negative') {
+  const getAlertIcon = (predicted_nature: string) => {
+    if (predicted_nature === 'Negative') {
       return <AlertTriangle className="h-5 w-5" />
-    } else if (nature === 'Positive') {
+    } else if (predicted_nature === 'Positive') {
       return <TrendingUp className="h-5 w-5" />
     } else {
       return <Bell className="h-5 w-5" />
     }
   }
 
-  const getAlertColor = (nature: string) => {
-    if (nature === 'Negative') {
+  const getAlertColor = (predicted_nature: string) => {
+    if (predicted_nature === 'Negative') {
       return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-    } else if (nature === 'Positive') {
+    } else if (predicted_nature === 'Positive') {
       return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
     } else {
       return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+    }
+  }
+
+  const markAsRead = async (alertId: string) => {
+    const token = localStorage.getItem('accessToken') || localStorage.getItem('access_token')
+    if (!token) return
+
+    try {
+      const response = await fetch('http://127.0.0.1:8001/api/user/alerts/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ alert_id: alertId }),
+      })
+
+      if (response.ok) {
+        // Update local state to mark as read
+        setAlerts(alerts.map(alert =>
+          alert.id === alertId ? { ...alert, is_read: true } : alert
+        ))
+      } else {
+        console.error('Failed to mark alert as read:', response.status, response.statusText)
+      }
+    } catch (error) {
+      console.error('Error marking alert as read:', error)
     }
   }
 
@@ -87,22 +120,36 @@ export default function AlertsPage() {
 
       <div className="space-y-4">
         {alerts.length > 0 ? (
-          alerts.map((alert, index) => (
-            <Card key={index}>
+          alerts.map((alert) => (
+            <Card key={alert.id}>
               <CardContent className="pt-6">
                 <div className="flex items-start space-x-4">
-                  <div className={`p-2 rounded-full ${getAlertColor(alert.nature)}`}>
-                    {getAlertIcon(alert.nature)}
+                  <div className={`p-2 rounded-full ${getAlertColor(alert.predicted_nature)}`}>
+                    {getAlertIcon(alert.predicted_nature)}
                   </div>
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold">{alert.stock} Alert</h3>
-                      <Badge variant="destructive">
-                        {alert.nature}
-                      </Badge>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant={alert.predicted_nature === 'Negative' ? 'destructive' : 'default'}>
+                          {alert.predicted_nature}
+                        </Badge>
+                        {!alert.is_read && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => markAsRead(alert.id)}
+                          >
+                            Mark as Read
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <p className="text-muted-foreground">{alert.message}</p>
-                    <p className="text-sm text-muted-foreground">Sentiment Score: {alert.sentiment.toFixed(2)}</p>
+                    <p className="text-sm text-muted-foreground">Sentiment Score: {alert.sentiment_score.toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(alert.created_at).toLocaleString()}
+                    </p>
                   </div>
                 </div>
               </CardContent>
