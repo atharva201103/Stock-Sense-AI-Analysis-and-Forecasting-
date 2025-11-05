@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-11-05 05:47:18.796804",
+  "models": {
+    "XGBoost_Classification": {
+      "cross_val_accuracy_mean": NaN,
+      "cross_val_accuracy_std": NaN,
+      "test_accuracy": 0.8571428571428571,
+      "dataset_size": 66,
+      "cv_folds": 5
+    },
+    "ARIMA": {
+      "mse": 1.973692250492957,
+      "mae": 0.6098050105857704,
+      "rmse": 1.404881578814726,
+      "dataset_size": 56
+    }
+  }
+}

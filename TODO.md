@@ -8,3 +8,5 @@
 - [x] Test the scraper and API integration
 - [x] Fix database locking issues by implementing file locking and reducing scheduler frequency
 - [x] Configure scheduler to run news scraping every 15 minutes and stock prices every 10 minutes
+- [x] Integrate sentiment analysis into news processing pipeline
+- [x] Update frontend to display sentiment analysis results and additional news metadata

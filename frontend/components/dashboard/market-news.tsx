@@ -18,6 +18,24 @@ interface NewsItem {
   url?: string
   category?: string
   tags?: string[]
+  // Sentiment analysis fields
+  sentimentScore?: number
+  sentimentLabel?: string
+  sentimentConfidence?: number
+  // Additional processed fields
+  natureOfNews?: string
+  sectorOfCompany?: string
+  impactLevel?: string
+  stockMentioned?: string
+  newsType?: string[]
+  keywords?: string[]
+  volatilityIndicator?: string
+  relevanceScore?: number
+  competitorImpact?: string
+  marketTrendAlignment?: string
+  regulatoryImpact?: string
+  socialMediaBuzz?: string
+  financialMetricsMentioned?: string[]
 }
 
 export function MarketNews() {
@@ -175,6 +193,66 @@ export function MarketNews() {
                       <span>{formatDate(item.date)}</span>
                     </div>
                     <p className="mt-2 text-sm">{item.summary || item.content}</p>
+
+                    {/* Sentiment Analysis Display */}
+                    {item.sentimentLabel && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="text-xs font-medium">Sentiment:</span>
+                        <span
+                          className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                            item.sentimentLabel === 'positive'
+                              ? 'bg-green-100 text-green-800'
+                              : item.sentimentLabel === 'negative'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {item.sentimentLabel.charAt(0).toUpperCase() + item.sentimentLabel.slice(1)}
+                          {item.sentimentConfidence && (
+                            <span className="ml-1 opacity-75">
+                              ({Math.round(item.sentimentConfidence * 100)}%)
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Additional Metadata */}
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      {item.impactLevel && item.impactLevel !== 'Medium' && (
+                        <span>Impact: {item.impactLevel}</span>
+                      )}
+                      {item.volatilityIndicator && item.volatilityIndicator !== 'Medium' && (
+                        <span>Volatility: {item.volatilityIndicator}</span>
+                      )}
+                      {item.relevanceScore && item.relevanceScore !== 5 && (
+                        <span>Relevance: {item.relevanceScore}/10</span>
+                      )}
+                      {item.natureOfNews && item.natureOfNews !== 'Neutral' && (
+                        <span>Nature: {item.natureOfNews}</span>
+                      )}
+                      {item.sectorOfCompany && item.sectorOfCompany !== 'General' && (
+                        <span>Sector: {item.sectorOfCompany}</span>
+                      )}
+                    </div>
+
+                    {/* Keywords */}
+                    {item.keywords && item.keywords.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {item.keywords.slice(0, 3).map((keyword, idx) => (
+                          <span key={idx} className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                            {keyword}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Stock Mentioned */}
+                    {item.stockMentioned && item.stockMentioned !== 'General' && (
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        Stock: {item.stockMentioned}
+                      </div>
+                    )}
                   </div>
                 ))
               )}

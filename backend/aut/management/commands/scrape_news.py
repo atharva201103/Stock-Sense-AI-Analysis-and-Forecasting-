@@ -1,5 +1,7 @@
 from django.core.management.base import BaseCommand
 import requests
+import sys
+sys.path.insert(0, '/Users/atharvavitthaljawalkar/Desktop/DataSets/backend/venv/lib/python3.11/site-packages')
 from bs4 import BeautifulSoup
 from datetime import datetime
 import uuid
@@ -359,7 +361,7 @@ class Command(BaseCommand):
 
                     # Store in raw_news collection
                     raw_news_collection.insert_one({
-                        'id': news_id,
+                        '_id': news_id,  # Use _id for consistency with processed_news
                         'title': title,
                         'content': content,
                         'summary': summary,
@@ -371,7 +373,7 @@ class Command(BaseCommand):
                     })
                     count += 1
 
-                    # Analyze the news
+                    # Analyze the news using AI
                     # Determine stock from title
                     stock = 'General'
                     for s in stocks:

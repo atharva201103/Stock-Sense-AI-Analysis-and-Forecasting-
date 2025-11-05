@@ -172,7 +172,7 @@ If a chart is appropriate, generate matplotlib code to visualize the data.
     }
 
     if (recentConversation) {
-      // Update existing conversation
+      
       await chatsCollection.updateOne(
         { _id: recentConversation._id },
         {
@@ -195,7 +195,7 @@ If a chart is appropriate, generate matplotlib code to visualize the data.
       })
     }
 
-    // Return the Django response directly
+   
     return NextResponse.json({
       success: true,
       type: djangoData.type,

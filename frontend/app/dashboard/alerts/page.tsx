@@ -31,7 +31,7 @@ export default function AlertsPage() {
       }
 
       try {
-        const response = await fetch('http://127.0.0.1:8001/api/user/alerts/', {
+        const response = await fetch('http://127.0.0.1:8000/api/user/alerts/', {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -80,7 +80,7 @@ export default function AlertsPage() {
     if (!token) return
 
     try {
-      const response = await fetch('http://127.0.0.1:8001/api/user/alerts/', {
+      const response = await fetch('http://127.0.0.1:8000/api/user/alerts/', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
