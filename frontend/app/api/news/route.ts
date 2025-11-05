@@ -79,12 +79,12 @@ export async function GET(request: Request) {
 
     const { db } = await connectToDatabase()
 
-    // Get news from the raw_news collection
-    const newsCollection = db.collection("raw_news")
-    const rawNews = await newsCollection.find().sort({ date: -1 }).limit(10).toArray()
+    // Get news from the processed_news collection (includes sentiment analysis)
+    const newsCollection = db.collection("processed_news")
+    const processedNews = await newsCollection.find().sort({ date: -1 }).limit(10).toArray()
 
     // Transform MongoDB documents to match frontend interface
-    const news = rawNews.map((item) => ({
+    const news = processedNews.map((item) => ({
       id: item._id.toString(),
       title: item.title,
       content: item.content,
@@ -94,6 +94,24 @@ export async function GET(request: Request) {
       url: item.url,
       category: item.category,
       tags: item.tags,
+      // Add sentiment analysis fields
+      sentimentScore: item['Sentiment Score'],
+      sentimentLabel: item.sentiment_label,
+      sentimentConfidence: item.sentiment_confidence,
+      // Add other processed fields
+      natureOfNews: item.nature_of_news,
+      sectorOfCompany: item.sector_of_company,
+      impactLevel: item.impact_level,
+      stockMentioned: item.stock_mentioned,
+      newsType: item.news_type,
+      keywords: item.keywords,
+      volatilityIndicator: item.volatility_indicator,
+      relevanceScore: item.relevance_score,
+      competitorImpact: item.competitor_impact,
+      marketTrendAlignment: item.market_trend_alignment,
+      regulatoryImpact: item.regulatory_impact,
+      socialMediaBuzz: item.social_media_buzz,
+      financialMetricsMentioned: item.financial_metrics_mentioned,
     }))
 
     return NextResponse.json({

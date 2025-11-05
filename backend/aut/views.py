@@ -20,7 +20,10 @@ from django.views.decorators.csrf import csrf_exempt
 from .serializers import WatchlistSerializer, PortfolioSerializer, UserProfileSerializer
 from .models import UserProfile, Portfolio, Watchlist
 import pickle
-import tensorflow as tf
+try:
+    import tensorflow as tf
+except ImportError:
+    tf = None
 from .mongodb_client import get_db
 import numpy as np
 import re
