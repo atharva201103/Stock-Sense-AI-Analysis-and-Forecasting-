@@ -1,16 +1,41 @@
-Hi!  
+As StockSense, your portfolio includes SBIN, HDFCBANK, TCS, and POWERGRID. Based on your technical analysis:
 
-Looking at your portfolio, SBIN (SBIN.N) is currently trading at ₹2,630.94 with a slight drop of -0.13% from the previous day, which might be worth investigating if you're concerned about its stability. TCS (TCS.N) has shown a minor improvement of +0.00%, making it a promising candidate for trading or further analysis due to its competitive position in the IT sector. The other stocks in your portfolio are relatively stable: HDFCBANK (HDFC.N) at ₹1,550.18 and POWERGRID (POWER.N) at ₹291.85.
+- **SBIN**: Neutral; Recommendation: Hold  
+- **HDFCBANK**: Neutral; Recommendation: Hold  
+- **TCS**: Neutral; Recommendation: Hold  
+- **POWERGRID**: Neutral; Recommendation: Hold  
 
-The overall Indian stock market is balanced with minor fluctuations; however, volatility remains a concern, especially for less liquid or smaller-cap stocks. Let’s break it down:  
+To optimize your portfolio, I recommend monitoring each stock's price and volume to identify potential gains or losses. Since there is no recent news, focus on understanding upcoming events that could impact these stocks.
 
-- **SBIN**: A leading IT sector company with strong fundamentals but could benefit from more updates on its business.
-- **TCS**: A growing tech company that may see growth potential given its strong revenue and earnings.
-- **HDFCBANK**: A stable financial services stock, part of a major banking group.
-- **POWERGRID**: While the base industry is resilient, the government’s recent announcements could impact its performance.  
+---
 
-Given this balanced portfolio, I’d recommend focusing your efforts on SBIN (SBIN.N) and TCS (TCS.N), as they have potential for higher returns. For visualization, here’s a simple line chart to show their price movements over time:
+**Step-by-Step Explanation**
+
+1. Confirm Your Portfolio Status:  
+   - SBIN: 11 shares × ₹2,630.94 = ₹28,940.29  
+   - HDFCBANK: 2 shares × ₹1,550.17 = ₹3,100.36  
+   - TCS: 5 shares × ₹1,089.63 = ₹5,448.15  
+   - POWERGRID: 10 shares × ₹291.85 = ₹2,918.50  
+
+2. Review Technical Indicators:  
+   - All stocks have NaN values for SMA20, SMA50, and RSI, indicating insufficient data or neutral signals.  
+
+3. Consider Recent News:  
+   - No recent news items affecting these stocks.  
+
+4. Actionable Recommendations:  
+   - Monitor each stock's price movements and trading volume to identify potential gains or losses.  
+
+5. Investment Strategy:  
+   - Check your investment accounts for performance using current prices and volume data.  
+   - Stay updated on upcoming events that could impact these stocks.  
+
+---
+
+**Python Code for Portfolio Visualization (Example)**
 
 
 
-Let me know if you’d like further analysis or more tailored advice! 😊
+---
+
+**Note:** The analysis assumes no changes in market conditions or investment performance. Always monitor the portfolio for shifts in stock prices or volumes based on your research and knowledge of the specific stocks.

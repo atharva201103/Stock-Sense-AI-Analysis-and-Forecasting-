@@ -51,6 +51,7 @@ class Command(BaseCommand):
                     le = pickle.load(f)
 
                 y_encoded = le.fit_transform(y)
+                y_encoded = y_encoded - y_encoded.min()
 
                 # Use cross-validation for more reliable evaluation
                 cv_scores = cross_val_score(xgb_clf, X, y_encoded, cv=3, scoring='accuracy')
@@ -144,54 +145,58 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f'ARIMA evaluation failed: {e}'))
 
         # 4. EMA Forecasting (Stock Prices)
-        self.stdout.write('Evaluating EMA Model...')
+        # self.stdout.write('Evaluating EMA Model...')
+        # try:
+        #     stock_data = list(stock_prices_collection.find())
+        #     if stock_data:
+        #         df_stocks = pd.DataFrame(stock_data)
+        #         df_stocks['timestamp'] = pd.to_datetime(df_stocks['timestamp'])
+        #         df_stocks = df_stocks.sort_values(['symbol', 'timestamp'])
+
+        #         ema_errors = []
+        #         for symbol in df_stocks['symbol'].unique():
+        #             symbol_data = df_stocks[df_stocks['symbol'] == symbol]
+        #             if len(symbol_data) >= 30:
+        #                 prices = symbol_data['current_price'].values
+        #                 ema_values = self.calculate_ema(pd.Series(prices))
+
+        #                 # Compare EMA with actual prices (next day prediction)
+        #                 actual_next = prices[20:]  # After EMA warmup
+        #                 ema_pred = ema_values[19:-1].values  # EMA predictions
+
+        #                 if len(actual_next) == len(ema_pred):
+        #                     mse = mean_squared_error(actual_next, ema_pred)
+        #                     mae = mean_absolute_error(actual_next, ema_pred)
+        #                     rmse = np.sqrt(mse)
+        #                     ema_errors.append((mse, mae, rmse))
+
+        #         if ema_errors:
+        #             avg_mse = np.mean([e[0] for e in ema_errors])
+        #             avg_mae = np.mean([e[1] for e in ema_errors])
+        #             avg_rmse = np.mean([e[2] for e in ema_errors])
+
+        #             metrics_report['models']['EMA'] = {
+        #                 'mse': float(avg_mse),
+        #                 'mae': float(avg_mae),
+        #                 'rmse': float(avg_rmse),
+        #                 'stocks_evaluated': len(ema_errors)
+        #             }
+        #             self.stdout.write(f'EMA - Avg RMSE: {avg_rmse:.4f}, Avg MAE: {avg_mae:.4f}')
+        #         else:
+        #             self.stdout.write(self.style.WARNING('Not enough stock data for EMA evaluation'))
+        #     else:
+        #         self.stdout.write(self.style.WARNING('No stock data for EMA evaluation'))
+        # except Exception as e:
+        #     self.stdout.write(self.style.ERROR(f'EMA evaluation failed: {e}'))
+
+        # 5. XGBoost Regression (Stock Forecasting)
+        self.stdout.write('Evaluating XGBoost Regression Model...')
         try:
             stock_data = list(stock_prices_collection.find())
             if stock_data:
                 df_stocks = pd.DataFrame(stock_data)
                 df_stocks['timestamp'] = pd.to_datetime(df_stocks['timestamp'])
                 df_stocks = df_stocks.sort_values(['symbol', 'timestamp'])
-
-                ema_errors = []
-                for symbol in df_stocks['symbol'].unique():
-                    symbol_data = df_stocks[df_stocks['symbol'] == symbol]
-                    if len(symbol_data) >= 30:
-                        prices = symbol_data['current_price'].values
-                        ema_values = self.calculate_ema(pd.Series(prices))
-
-                        # Compare EMA with actual prices (next day prediction)
-                        actual_next = prices[20:]  # After EMA warmup
-                        ema_pred = ema_values[19:-1].values  # EMA predictions
-
-                        if len(actual_next) == len(ema_pred):
-                            mse = mean_squared_error(actual_next, ema_pred)
-                            mae = mean_absolute_error(actual_next, ema_pred)
-                            rmse = np.sqrt(mse)
-                            ema_errors.append((mse, mae, rmse))
-
-                if ema_errors:
-                    avg_mse = np.mean([e[0] for e in ema_errors])
-                    avg_mae = np.mean([e[1] for e in ema_errors])
-                    avg_rmse = np.mean([e[2] for e in ema_errors])
-
-                    metrics_report['models']['EMA'] = {
-                        'mse': float(avg_mse),
-                        'mae': float(avg_mae),
-                        'rmse': float(avg_rmse),
-                        'stocks_evaluated': len(ema_errors)
-                    }
-                    self.stdout.write(f'EMA - Avg RMSE: {avg_rmse:.4f}, Avg MAE: {avg_mae:.4f}')
-                else:
-                    self.stdout.write(self.style.WARNING('Not enough stock data for EMA evaluation'))
-            else:
-                self.stdout.write(self.style.WARNING('No stock data for EMA evaluation'))
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f'EMA evaluation failed: {e}'))
-
-        # 5. XGBoost Regression (Stock Forecasting)
-        self.stdout.write('Evaluating XGBoost Regression Model...')
-        try:
-            if stock_data:
                 xgb_errors = []
                 for symbol in df_stocks['symbol'].unique():
                     symbol_data = df_stocks[df_stocks['symbol'] == symbol]

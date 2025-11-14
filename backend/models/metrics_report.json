@@ -1,18 +1,31 @@
 {
-  "timestamp": "2025-11-05 05:47:18.796804",
+  "timestamp": "2025-11-13 15:47:33.330924",
   "models": {
     "XGBoost_Classification": {
-      "cross_val_accuracy_mean": NaN,
-      "cross_val_accuracy_std": NaN,
-      "test_accuracy": 0.8571428571428571,
-      "dataset_size": 66,
+      "cross_val_accuracy_mean": 0.7984287317620651,
+      "cross_val_accuracy_std": 0.11836037216026715,
+      "test_accuracy": 0.8787878787878788,
+      "dataset_size": 163,
       "cv_folds": 5
     },
+    "LSTM": {
+      "mse": 1.0329187345945787,
+      "mae": 0.4979146179887983,
+      "rmse": 1.0163260965824792,
+      "dataset_size": 153
+    },
     "ARIMA": {
-      "mse": 1.973692250492957,
-      "mae": 0.6098050105857704,
-      "rmse": 1.404881578814726,
-      "dataset_size": 56
+      "mse": 1.169799047218345,
+      "mae": 0.4839498825340677,
+      "rmse": 1.0815724881940854,
+      "dataset_size": 153
+    },
+    "XGBoost_Regression": {
+      "mse": 1311.8390283726617,
+      "mae": 17.557981725274548,
+      "rmse": 23.32680408666116,
+      "r2_score": -0.8885202879448122,
+      "stocks_evaluated": 30
     }
   }
 }
