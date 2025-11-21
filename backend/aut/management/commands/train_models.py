@@ -9,6 +9,7 @@ from xgboost import XGBClassifier
 from sklearn.metrics import accuracy_score
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.losses import MeanSquaredError
 from statsmodels.tsa.arima.model import ARIMA
 import numpy as np
 
@@ -44,6 +45,7 @@ class Command(BaseCommand):
 
         le = LabelEncoder()
         y_encoded = le.fit_transform(y)
+        y_encoded = y_encoded - y_encoded.min()
 
         X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.2, random_state=42)
 
@@ -81,7 +83,7 @@ class Command(BaseCommand):
             lstm_model = Sequential()
             lstm_model.add(LSTM(50, activation='relu', input_shape=(seq_length, 1)))
             lstm_model.add(Dense(1))
-            lstm_model.compile(optimizer='adam', loss='mse')
+            lstm_model.compile(optimizer='adam', loss=MeanSquaredError())
             lstm_model.fit(X_lstm, y_lstm, epochs=10, verbose=0)
             lstm_model.save('models/lstm_model.h5')
             self.stdout.write('LSTM model trained and saved')

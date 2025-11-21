@@ -168,6 +168,33 @@ class ModelView(APIView):
 
             # Enhanced question understanding with real-time data capabilities
             prompt_lower = prompt.lower()
+            forecast_pattern = re.search(r'(forecast|predicted|expected)\s+(price|value)\s+(?:of|for)\s+([A-Za-z&\-]+)', prompt_lower, re.IGNORECASE)
+            if forecast_pattern:
+                stock_name = forecast_pattern.group(3).upper()
+                db = get_db()
+                forecast_collection = db['forecasts']
+                forecast_data = forecast_collection.find_one({'ticker': stock_name})
+                if forecast_data:
+                    arima = forecast_data.get('arima')
+                    ema = forecast_data.get('ema')
+                    xgb = forecast_data.get('xgboost')
+                    message = (
+                    f"📊 Forecasted prices for {stock_name}:\n"
+                    f"• ARIMA: ₹{arima:.2f}\n"
+                    f"• EMA: ₹{ema:.2f}\n"
+                    f"• XGBoost: ₹{xgb:.2f}\n\n"
+                    f"Based on recent trends, XGBoost predicts ₹{xgb:.2f} as the most likely price."
+                   )
+                    return JsonResponse({
+                    "type": "text",
+                    "message": message
+                    }, status=200)
+                
+                    
+
+                
+                
+                
 
             # Check for real-time price queries
             price_keywords = ['current price', 'price of', 'stock price', 'share price', 'live price', 'what is price']

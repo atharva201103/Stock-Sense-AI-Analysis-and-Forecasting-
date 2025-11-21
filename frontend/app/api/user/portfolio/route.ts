@@ -26,90 +26,99 @@ export async function GET(request: Request) {
     let portfolio = await portfolioCollection.findOne({ userId: userData.id })
     console.log("Portfolio from DB:", portfolio)
 
-    // If portfolio doesn't exist or has empty holdings, calculate from transactions
-    if (!portfolio || !portfolio.holdings || portfolio.holdings.length === 0) {
-      console.log("No portfolio found or empty holdings, calculating from transactions")
-      // Get all user transactions
-      const transactions = await transactionsCollection.find({ userId: userData.id }).toArray()
-      console.log("Transactions for calculation:", transactions)
+    // Always calculate holdings from transactions to ensure accuracy
+    console.log("Calculating portfolio from transactions")
+    // Get all user transactions, sorted by date
+    const transactions = await transactionsCollection.find({ userId: userData.id }).sort({ date: 1 }).toArray()
+    console.log("Transactions for calculation:", transactions)
 
-      // Calculate holdings from transactions
-      const holdings: Record<
-        string,
-        {
-          symbol: string
-          name: string
-          shares: number
-          avgPrice: number
-          totalCost: number
+    // Calculate holdings from transactions
+    const holdings: Record<
+      string,
+      {
+        symbol: string
+        name: string
+        shares: number
+        avgPrice: number
+        totalCost: number
+      }
+    > = {}
+
+    // Process transactions to build portfolio
+    transactions.forEach((transaction) => {
+      const { type, symbol, name, shares, price, amount } = transaction
+
+      if (!holdings[symbol] && (type === "Buy" || type === "Sell")) {
+        holdings[symbol] = {
+          symbol,
+          name,
+          shares: 0,
+          avgPrice: 0,
+          totalCost: 0,
         }
-      > = {}
-
-      // Process transactions to build portfolio
-      transactions.forEach((transaction) => {
-        const { type, symbol, name, shares, price, amount } = transaction
-
-        if (!holdings[symbol] && (type === "Buy" || type === "Sell")) {
-          holdings[symbol] = {
-            symbol,
-            name,
-            shares: 0,
-            avgPrice: 0,
-            totalCost: 0,
-          }
-        }
-
-        if (type === "Buy") {
-          const currentShares = holdings[symbol]?.shares || 0
-          const currentCost = holdings[symbol]?.totalCost || 0
-
-          // Update shares and average price
-          holdings[symbol].shares += shares
-          holdings[symbol].totalCost += amount
-
-          // Recalculate average price
-          if (holdings[symbol].shares > 0) {
-            holdings[symbol].avgPrice = holdings[symbol].totalCost / holdings[symbol].shares
-          }
-        } else if (type === "Sell") {
-          // Reduce shares but keep average price
-          holdings[symbol].shares -= shares
-
-          // If shares become 0 or negative, reset
-          if (holdings[symbol].shares <= 0) {
-            holdings[symbol].shares = 0
-            holdings[symbol].totalCost = 0
-            holdings[symbol].avgPrice = 0
-          } else {
-            // Reduce cost proportionally
-            holdings[symbol].totalCost = holdings[symbol].avgPrice * holdings[symbol].shares
-          }
-        }
-      })
-
-      // Filter out positions with 0 shares
-      const holdingsArray = Object.values(holdings).filter((holding) => holding.shares > 0)
-      console.log("Calculated holdings:", holdingsArray)
-
-      // Create portfolio document
-      portfolio = {
-        userId: userData.id,
-        holdings: holdingsArray,
-        lastUpdated: new Date(),
-        createdAt: new Date(),
       }
 
-      // Save portfolio to database
-      if (holdingsArray.length > 0) {
-        await portfolioCollection.insertOne(portfolio)
-        console.log("Created new portfolio in DB")
+      if (type === "Buy") {
+        const currentShares = holdings[symbol]?.shares || 0
+        const currentCost = holdings[symbol]?.totalCost || 0
+
+        // Update shares and average price
+        holdings[symbol].shares += shares
+        holdings[symbol].totalCost += amount
+
+        // Recalculate average price
+        if (holdings[symbol].shares > 0) {
+          holdings[symbol].avgPrice = holdings[symbol].totalCost / holdings[symbol].shares
+        }
+      } else if (type === "Sell") {
+        // Reduce shares but keep average price
+        holdings[symbol].shares -= shares
+
+        // If shares become 0 or negative, reset
+        if (holdings[symbol].shares <= 0) {
+          holdings[symbol].shares = 0
+          holdings[symbol].totalCost = 0
+          holdings[symbol].avgPrice = 0
+        } else {
+          // Reduce cost proportionally
+          holdings[symbol].totalCost = holdings[symbol].avgPrice * holdings[symbol].shares
+        }
       }
+    })
+
+    // Filter out positions with 0 shares
+    const holdingsArray = Object.values(holdings).filter((holding) => holding.shares > 0)
+    console.log("Calculated holdings:", holdingsArray)
+
+    // Update or create portfolio document
+    const portfolioData = {
+      userId: userData.id,
+      holdings: holdingsArray,
+      lastUpdated: new Date(),
+    }
+
+    // Upsert portfolio to database
+    await portfolioCollection.updateOne(
+      { userId: userData.id },
+      {
+        $set: portfolioData,
+        $setOnInsert: { createdAt: new Date() }
+      },
+      { upsert: true }
+    )
+    console.log("Portfolio updated in DB")
+
+    // Set portfolio to the calculated data
+    portfolio = {
+      userId: userData.id,
+      holdings: holdingsArray,
+      lastUpdated: new Date(),
     }
 
     return NextResponse.json({
       success: true,
       portfolio: {
-        holdings: portfolio.holdings || [],
+        holdings: holdingsArray,
       },
     })
   } catch (error) {

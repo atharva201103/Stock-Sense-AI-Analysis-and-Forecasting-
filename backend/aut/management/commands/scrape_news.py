@@ -17,7 +17,7 @@ Analyze the following news article about the stock {stock} and provide the infor
 Output only the JSON object, nothing else.
 
 {{
-  "Nature of News": "Positive/Negative/Neutral",
+  "Nature of News": "string (Positive, Negative, or Neutral)",
   "Sector of Company": "string",
   "Impact Level": "High/Medium/Low",
   "Stock Mentioned": "{stock}",

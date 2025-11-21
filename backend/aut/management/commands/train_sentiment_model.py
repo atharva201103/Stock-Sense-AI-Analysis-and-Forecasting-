@@ -153,7 +153,7 @@ class Command(BaseCommand):
         # Train model
         history = model.fit(
             X_train, y_train,
-            epochs=1000,
+            epochs=100,
             batch_size=16,
             validation_split=0.2,
             verbose=1

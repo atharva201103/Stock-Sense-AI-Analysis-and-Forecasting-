@@ -1,18 +1,15 @@
 from django.core.management.base import BaseCommand
 import requests
-from bs4 import BeautifulSoup
-from datetime import datetime
-import re
+from datetime import datetime, timedelta
 from aut.mongodb_client import get_db
 
 class Command(BaseCommand):
-    help = 'Scrape real-time stock prices from Moneycontrol and store in database'
+    help = 'Fetch last 60 days of stock prices for multiple Indian stocks from Yahoo Finance'
 
     def handle(self, *args, **options):
         try:
-            self.stdout.write('Starting stock price scrape from Moneycontrol')
+            self.stdout.write('Starting 60-day stock history scrape from Yahoo Finance')
 
-            # List of major Indian stocks to scrape - using Yahoo Finance API
             stocks = {
                 'RELIANCE': 'RELIANCE.NS',
                 'TCS': 'TCS.NS',
@@ -44,81 +41,70 @@ class Command(BaseCommand):
                 'SUNPHARMA': 'SUNPHARMA.NS',
                 'TATAMOTORS': 'TATAMOTORS.NS',
                 'M&M': 'M&M.NS'
+                # add more if needed
             }
 
             db = get_db()
             stock_prices_collection = db['stock_prices']
 
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
             }
 
             scraped_count = 0
+            days_back = 60  # 👈 change this to control how many days to fetch
 
             for stock_symbol, yahoo_symbol in stocks.items():
                 try:
-                    # Use Yahoo Finance API for real-time data
-                    url = f'https://query1.finance.yahoo.com/v8/finance/chart/{yahoo_symbol}?period1={int((datetime.now().timestamp() - 86400))}&period2={int(datetime.now().timestamp())}&interval=1d'
-                    print(f"Fetching data for {stock_symbol} from Yahoo Finance")
+                    self.stdout.write(f'Fetching 60-day data for {stock_symbol}...')
+
+                    # Calculate UNIX timestamps for the last 60 days
+                    end_time = int(datetime.now().timestamp())
+                    start_time = int((datetime.now() - timedelta(days=days_back)).timestamp())
+
+                    url = f'https://query1.finance.yahoo.com/v8/finance/chart/{yahoo_symbol}?period1={start_time}&period2={end_time}&interval=1d'
 
                     response = requests.get(url, headers=headers, timeout=10)
 
-                    if response.status_code == 200:
-                        data = response.json()
-                        chart = data.get('chart', {}).get('result', [{}])[0]
-                        meta = chart.get('meta', {})
-
-                        if meta:
-                            current_price = meta.get('regularMarketPrice', 0)
-                            previous_close = meta.get('previousClose', 0)
-                            change = current_price - previous_close if current_price and previous_close else 0
-                            change_percent = (change / previous_close * 100) if previous_close else 0
-
-                            # Get additional data
-                            volume = meta.get('regularMarketVolume', 0)
-                            market_cap = meta.get('marketCap', 0)
-                            week_high = meta.get('fiftyTwoWeekHigh', 0)
-                            week_low = meta.get('fiftyTwoWeekLow', 0)
-
-                            print(f"Successfully fetched {stock_symbol}: ₹{current_price}")
-                        else:
-                            self.stdout.write(self.style.WARNING(f'No meta data for {stock_symbol}'))
-                            continue
-                    else:
-                        self.stdout.write(self.style.WARNING(f'Yahoo Finance API failed for {stock_symbol}: {response.status_code}'))
+                    if response.status_code != 200:
+                        self.stdout.write(self.style.WARNING(f"API failed for {stock_symbol}: {response.status_code}"))
                         continue
 
-                    # Store in database
-                    stock_data = {
-                        'symbol': stock_symbol,
-                        'current_price': current_price,
-                        'change': change,
-                        'change_percent': change_percent,
-                        'volume': volume,
-                        'market_cap': market_cap,
-                        'week_high': week_high,
-                        'week_low': week_low,
-                        'timestamp': datetime.now(),
-                        'source': 'Yahoo Finance'
-                    }
+                    data = response.json().get('chart', {}).get('result', [{}])[0]
+                    timestamps = data.get('timestamp', [])
+                    indicators = data.get('indicators', {}).get('quote', [{}])[0]
 
-                    # Update or insert
-                    stock_prices_collection.update_one(
-                        {'symbol': stock_symbol},
-                        {'$set': stock_data},
-                        upsert=True
-                    )
+                    closes = indicators.get('close', [])
+                    volumes = indicators.get('volume', [])
+
+                    # Store each day's record in DB
+                    for i, ts in enumerate(timestamps):
+                        price = closes[i] if i < len(closes) else None
+                        volume = volumes[i] if i < len(volumes) else 0
+                        if not price:
+                            continue
+
+                        stock_data = {
+                            'symbol': stock_symbol,
+                            'current_price': round(price, 2),
+                            'volume': volume,
+                            'timestamp': datetime.utcfromtimestamp(ts),
+                            'source': 'Yahoo Finance (Historical)'
+                        }
+
+                        # 👇 Use upsert by (symbol + timestamp)
+                        stock_prices_collection.insert_one(stock_data)
 
                     scraped_count += 1
-                    self.stdout.write(f'Scraped {stock_symbol}: ₹{current_price} ({change:+.2f})')
+                    self.stdout.write(self.style.SUCCESS(f'Successfully fetched {len(timestamps)} days for {stock_symbol}'))
 
                 except Exception as e:
-                    self.stdout.write(self.style.WARNING(f'Failed to scrape {stock_symbol}: {e}'))
+                    self.stdout.write(self.style.ERROR(f'Error fetching {stock_symbol}: {e}'))
                     continue
 
-            self.stdout.write(self.style.SUCCESS(f'Successfully scraped {scraped_count} stock prices from Yahoo Finance'))
+            self.stdout.write(self.style.SUCCESS(f'✅ Completed scraping {scraped_count} stocks with historical data'))
 
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'Error during stock price scrape: {e}'))
+            self.stdout.write(self.style.ERROR(f'Error during stock scrape: {e}'))
             import traceback
             traceback.print_exc()

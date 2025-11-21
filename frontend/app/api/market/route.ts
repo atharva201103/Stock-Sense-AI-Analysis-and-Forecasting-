@@ -49,8 +49,18 @@ else:
 
       const result = stdout.trim()
       if (result && result !== 'null') {
-        const stockData = JSON.parse(result)
-        return NextResponse.json(stockData)
+        // Extract JSON from output (handle Django shell output that may include extra text)
+        const jsonMatch = result.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          try {
+            const stockData = JSON.parse(jsonMatch[0])
+            return NextResponse.json(stockData)
+          } catch (parseError) {
+            console.log("JSON parse error:", parseError, "Raw output:", result)
+          }
+        } else {
+          console.log("No JSON found in output:", result)
+        }
       }
     } catch (dbError) {
       console.log("Database query failed, falling back to APIs:", dbError)
